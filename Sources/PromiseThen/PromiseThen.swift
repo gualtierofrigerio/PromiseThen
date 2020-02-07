@@ -22,6 +22,10 @@ public enum PromiseReturn<T> {
 /// It is possible to chain multiple Promise object by using then
 public class Promise<T> {
     
+    /// Empty initialiser needed to instantiate the class outside the package
+    public init() {
+        
+    }
     /// Subscribe to the Promise in order to observe its return value
     /// - Parameter callback: a closure accepting PromiseReturn as a parameter
     public func observe(callback: @escaping (PromiseReturn<T>) -> Void) {
