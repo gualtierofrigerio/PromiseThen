@@ -10,7 +10,7 @@ import Foundation
 /// The possible value returned by a Promise
 /// value is returned when the promise is fulfilled with a value
 /// otherwise error is returned
-enum PromiseReturn<T> {
+public enum PromiseReturn<T> {
     case value(T)
     case error(Error)
 }
@@ -20,11 +20,11 @@ enum PromiseReturn<T> {
 /// and you can subscribe to it by calling observe and check for its return value
 /// of type PromiseReturn
 /// It is possible to chain multiple Promise object by using then
-class Promise<T> {
+public class Promise<T> {
     
     /// Subscribe to the Promise in order to observe its return value
     /// - Parameter callback: a closure accepting PromiseReturn as a parameter
-    func observe(callback: @escaping (PromiseReturn<T>) -> Void) {
+    public func observe(callback: @escaping (PromiseReturn<T>) -> Void) {
         callbacks.append(callback)
         if let result = result {
             callback(result)
@@ -33,13 +33,13 @@ class Promise<T> {
     
     /// Rejects the Promise by sending the type error to the subscribers
     /// - Parameter error: the error to pass to the subscribers
-    func reject(error:Error) {
+    public func reject(error:Error) {
         result = .error(error)
     }
     
     /// Fulfulls the Promise by sending the value to the subscribers
     /// - Parameter value: the value to pass to the subscribers
-    func resolve(value:T) {
+    public func resolve(value:T) {
         result = .value(value)
     }
     
@@ -52,7 +52,7 @@ class Promise<T> {
     /// so we can observe that and finally resolve or reject the new promise of type P we created at the beginning
     /// - Parameter block:  a closure returning a new Promise of type P
     /// - Returns: a Promise of type P, the same of the closure passed as a parameter
-    func then<P>(_ block:@escaping(T) -> Promise<P>) -> Promise<P> {
+    public func then<P>(_ block:@escaping(T) -> Promise<P>) -> Promise<P> {
         let thenPromise = Promise<P>()
         observe { currentPromiseReturn in
             switch currentPromiseReturn {
