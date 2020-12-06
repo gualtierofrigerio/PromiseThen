@@ -7,18 +7,10 @@
 
 import Foundation
 
-/// The possible value returned by a Promise
-/// value is returned when the promise is fulfilled with a value
-/// otherwise error is returned
-public enum PromiseReturn<T> {
-    case value(T)
-    case error(Error)
-}
-
 /// Class implementing the Future/Promise concept
 /// After instantiating the Promise object you can reject or resolve the promise
 /// and you can subscribe to it by calling observe and check for its return value
-/// of type PromiseReturn
+/// of type Result
 /// It is possible to chain multiple Promise object by using then
 public class Promise<T> {
     
@@ -27,8 +19,8 @@ public class Promise<T> {
         
     }
     /// Subscribe to the Promise in order to observe its return value
-    /// - Parameter callback: a closure accepting PromiseReturn as a parameter
-    public func observe(callback: @escaping (PromiseReturn<T>) -> Void) {
+    /// - Parameter callback: a closure accepting Result as a parameter
+    public func observe(callback: @escaping (Result<T, Error>) -> Void) {
         callbacks.append(callback)
         if let result = result {
             callback(result)
@@ -38,13 +30,13 @@ public class Promise<T> {
     /// Rejects the Promise by sending the type error to the subscribers
     /// - Parameter error: the error to pass to the subscribers
     public func reject(error:Error) {
-        result = .error(error)
+        result = .failure(error)
     }
     
     /// Fulfulls the Promise by sending the value to the subscribers
     /// - Parameter value: the value to pass to the subscribers
     public func resolve(value:T) {
-        result = .value(value)
+        result = .success(value)
     }
     
     /// Combines two Promise object by accepting a Promise and returning a new one
@@ -58,19 +50,19 @@ public class Promise<T> {
     /// - Returns: a Promise of type P, the same of the closure passed as a parameter
     public func then<P>(_ block:@escaping(T) -> Promise<P>) -> Promise<P> {
         let thenPromise = Promise<P>()
-        observe { currentPromiseReturn in
-            switch currentPromiseReturn {
-            case .value(let val):
+        observe { currentPromiseResult in
+            switch currentPromiseResult {
+            case .success(let val):
                 let promise = block(val)
                 promise.observe { result in
                     switch result {
-                    case .value(let value):
+                    case .success(let value):
                         thenPromise.resolve(value: value)
-                    case .error(let err):
+                    case .failure(let err):
                         thenPromise.reject(error: err)
                     }
                 }
-            case .error(let err):
+            case .failure(let err):
                 thenPromise.reject(error: err)
             }
         }
@@ -78,8 +70,8 @@ public class Promise<T> {
     }
     
     // MARK: - Private
-    private var callbacks = [(PromiseReturn<T>) -> Void]()
-    private var result:PromiseReturn<T>? {
+    private var callbacks = [(Result<T, Error>) -> Void]()
+    private var result:Result<T,Error>? {
         didSet {
             if let res = result {
                 for callback in callbacks {
