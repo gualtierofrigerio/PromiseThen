@@ -49,6 +49,42 @@ func getUsersWithMergedData() -> Promise<[User]> {
 }
 ```
 
+you can optionally specify an object conforming to CancellableTask to cancel a task from the Promise.
+This example cancels a URLSessionDataTask
+
+```swift
+struct URLCancellableTask: CancellableTask {
+    var dataTask: URLSessionDataTask
+    
+    func cancel() {
+        dataTask.cancel()
+    }
+}
+
+func getData(atURL url: URL) -> Promise<Data> {
+    let promise = Promise<Data>()
+    let session = URLSession.shared
+    let task = session.dataTask(with: url) { (data, response, error) in
+        if let error = error {
+            promise.reject(error: NetworkClientError.networkError(error))
+            return
+        }
+        if let data = data {
+            promise.resolve(value: data)
+        }
+        else {
+            promise.reject(error: NetworkClientError.noData)
+        }
+    }
+    promise.setCancellableTask(URLCancellableTask(dataTask: task))
+    task.resume()
+    return promise
+}
+
+let promise = getData(atURL: url)
+promise.cancel()
+```
+
 ## How to install
 
 Use SPM by importing the package at this link https://github.com/gualtierofrigerio/PromiseThen.git
