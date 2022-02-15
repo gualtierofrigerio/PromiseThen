@@ -7,6 +7,15 @@
 
 import Foundation
 
+/// Implement this protocol to pass an object to a Promise that can
+/// be cancelled.
+/// For example if you use a Promise to start a URLSessionDataTask you can
+/// cancel it by wrapping the task into a type conforming to CancellableTask
+public protocol CancellableTask {
+    /// Cancel the task
+    func cancel()
+}
+
 /// Class implementing the Future/Promise concept
 /// After instantiating the Promise object you can reject or resolve the promise
 /// and you can subscribe to it by calling observe and check for its return value
@@ -18,6 +27,12 @@ public class Promise<T> {
     public init() {
         
     }
+    
+    /// Calls cancell on the CancebleTask object if it was set via setCancellableTask
+    public func cancel() {
+        cancellableTask?.cancel()
+    }
+
     /// Subscribe to the Promise in order to observe its return value
     /// - Parameter callback: a closure accepting Result as a parameter
     public func observe(callback: @escaping (Result<T, Error>) -> Void) {
@@ -29,14 +44,21 @@ public class Promise<T> {
     
     /// Rejects the Promise by sending the type error to the subscribers
     /// - Parameter error: the error to pass to the subscribers
-    public func reject(error:Error) {
+    public func reject(error: Error) {
         result = .failure(error)
     }
     
     /// Fulfulls the Promise by sending the value to the subscribers
     /// - Parameter value: the value to pass to the subscribers
-    public func resolve(value:T) {
+    public func resolve(value: T) {
         result = .success(value)
+    }
+    
+    /// Sets an object conforming to CancellableTask
+    /// This task can be cancelled by calling cancel() on the Promise
+    /// - Parameter task: the CancellableTask to set
+    public func setCancellableTask(_ task: CancellableTask) {
+        cancellableTask = task
     }
     
     /// Combines two Promise object by accepting a Promise and returning a new one
@@ -48,7 +70,7 @@ public class Promise<T> {
     /// so we can observe that and finally resolve or reject the new promise of type P we created at the beginning
     /// - Parameter block:  a closure returning a new Promise of type P
     /// - Returns: a Promise of type P, the same of the closure passed as a parameter
-    public func then<P>(_ block:@escaping(T) -> Promise<P>) -> Promise<P> {
+    public func then<P>(_ block: @escaping(T) -> Promise<P>) -> Promise<P> {
         let thenPromise = Promise<P>()
         observe { currentPromiseResult in
             switch currentPromiseResult {
@@ -71,7 +93,8 @@ public class Promise<T> {
     
     // MARK: - Private
     private var callbacks = [(Result<T, Error>) -> Void]()
-    private var result:Result<T,Error>? {
+    private var cancellableTask: CancellableTask?
+    private var result: Result<T,Error>? {
         didSet {
             if let res = result {
                 for callback in callbacks {
@@ -81,3 +104,4 @@ public class Promise<T> {
         }
     }
 }
+
