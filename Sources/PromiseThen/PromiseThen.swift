@@ -101,6 +101,7 @@ public class Promise<T> {
                     callback(res)
                 }
             }
+            callbacks.removeAll()
         }
     }
 }
